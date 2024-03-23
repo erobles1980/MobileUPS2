@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,28 +42,75 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 
 @Composable
+fun FormTimer(
+    duration: Int,
+    onPause: () -> Unit={},
+    onReset: () -> Unit={},
+    onComplete: ()-> Unit={}
+){
+
+    var timeLeft by remember {
+        mutableStateOf(10)
+        mutableIntStateOf(duration)
+    }
+
+    var isPaused by remember {
+        mutableStateOf(false)
+    }
+
+    LaunchedEffect(key1 = timeLeft) {
+
+            while (timeLeft > 0 && !isPaused) {
+                delay(1000L)
+                timeLeft--
+
+            }
+            onComplete()
+
+    }
+    Row (verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        modifier = Modifier
+            .fillMaxWidth()){
+
+        Text(text = "Time left: ${timeLeft.toString() }",
+            modifier = Modifier
+                .padding(16.dp),
+            fontSize = 20.sp)
+        Button(onClick = {
+            isPaused = false
+            timeLeft = duration
+            onReset() }) {
+            Icon(modifier = Modifier
+                .size(30.dp),
+                imageVector = Icons.Default.Refresh,
+                contentDescription = null)
+        }
+        Button(onClick = { isPaused = true
+            onPause() }) {
+            Icon(modifier = Modifier
+                .size(30.dp),
+                imageVector = Icons.Default.Warning,
+                contentDescription = null)
+        }
+    }
+}
+
+@Composable
 fun PersonList(
     persons: List<Person>,
     onAddPerson: (Person) -> Unit
 ) {
-    var timeLeft by remember {
-        mutableStateOf(10)
-    }
-    var isPaused by remember {
-        mutableStateOf(false)
-    }
-LaunchedEffect(key1 = timeLeft) {
-    while (timeLeft>0 && !isPaused){
-        delay(1000L)
-        timeLeft--
-    }
-}
+
 
     var nameTF by remember {
         mutableStateOf("")
     }
     var ageTF by remember {
         mutableStateOf("")
+    }
+    var isFormEnabled by remember {
+        mutableStateOf(true   )
     }
 //    var persons by remember {
 //        mutableStateOf(listOf<Person>())
@@ -72,29 +120,22 @@ LaunchedEffect(key1 = timeLeft) {
         modifier = Modifier
             .fillMaxSize()
             ) {
-        Row (verticalAlignment = Alignment.CenterVertically,
+        FormTimer(duration =15 ,
+            onReset = {
+                isFormEnabled=true
+            },
+            onComplete =  {
+                isFormEnabled=false
+            }
+        )
+        Spacer(
             modifier = Modifier
-                .fillMaxWidth()){
-
-            Text(text = "Time left: ${timeLeft.toString() }",
-                modifier = Modifier
-                    .padding(16.dp),
-                fontSize = 20.sp)
-            Button(onClick = {  timeLeft=10 }) {
-               Icon(modifier = Modifier
-                        .size(30.dp),
-                   imageVector = Icons.Default.Refresh,
-                   contentDescription = null)
-            }
-            Button(onClick = { isPaused=true}) {
-                Icon(modifier = Modifier
-                    .size(30.dp),
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = null)
-            }
-        }
-
+                .size(16.dp)
+        )
         TextField(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
                 value = nameTF,
                 placeholder = { Text(text = "Enter name",
                     fontSize = 20.sp
@@ -105,9 +146,12 @@ LaunchedEffect(key1 = timeLeft) {
         )
         Spacer(
             modifier = Modifier
-                .size(16.dp)
+                .size(10.dp)
         )
-        TextField(value = ageTF,
+        TextField(modifier = Modifier
+            .fillMaxWidth()
+            .padding(20.dp),
+            value = ageTF,
             placeholder = { Text(text = "Enter age")},
             onValueChange = {textEdad ->
                 ageTF=textEdad
@@ -118,7 +162,7 @@ LaunchedEffect(key1 = timeLeft) {
         )
         Spacer(
             modifier = Modifier
-                .size(16.dp)
+                .size(10.dp)
         )
             Button(onClick = {
                 val newPerson = Person(name = nameTF.toString(), age = ageTF.toString().toIntOrNull() ?: 0)
